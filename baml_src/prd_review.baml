@@ -142,7 +142,7 @@ function FacilitateDebate(
   segment_name: string,
   reviews_json: string
 ) -> DebateSession {
-  client "anthropic/claude-3-5-sonnet-20241022"
+  client "anthropic/claude-3-haiku-20240307"
   prompt #"
     You are facilitating a debate between user personas from the "{{ segment_name }}" demographic segment.
     
@@ -225,7 +225,7 @@ function AggregateReviews(
   debates_json: string,
   total_personas: int
 ) -> AggregatedInsights {
-  client "anthropic/claude-3-5-sonnet-20241022"
+  client "anthropic/claude-3-haiku-20240307"
   prompt #"
     You are analyzing feedback from {{ total_personas }} synthetic user personas who reviewed a PRD.
     
