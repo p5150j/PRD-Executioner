@@ -21,31 +21,111 @@ A multi-agent system that simulates a diverse user panel:
 
 This doesn't replace real user research - it's your **pre-flight checklist** before you commit resources.
 
-## Architecture
+## Architecture: BAML + LangGraph + LangSmith
+
+This demo showcases the power of combining three technologies:
+
+### The Stack
+- **BAML**: Type-safe structured outputs (schemas, validation, parsing)
+- **LangGraph**: Multi-agent workflow orchestration (state management, conditional routing)
+- **LangSmith**: Tracing and observability (debug each agent, track token usage)
+
+### Why This Combination?
+
+**BAML** handles what LLMs are bad at:
+- Returning valid, typed data structures
+- Consistent schema adherence
+- Fixing broken JSON automatically
+
+**LangGraph** handles what we need for multi-agent systems:
+- Stateful workflows with conditional logic
+- Parallel execution of 300 agents
+- Routing between phases based on output
+- Human-in-the-loop intervention points
+
+**LangSmith** gives us production-grade observability:
+- Trace each of the 300+ agent calls
+- Debug which personas found which issues
+- Track token usage per phase
+- Replay failed agents
+
+### The Workflow (LangGraph State Machine)
 
 ```
-Demographic Segments (4 archetypes)
-    ↓
-Generate 300 Personas (75 variations each)
-    ↓
-Phase 1: Independent Reviews
-├─ Persona 1 → Review A
-├─ Persona 2 → Review B
-├─ Persona 3 → Review C
-└─ ... 300 reviews
-    ↓
-Phase 2: Agent Debate
-├─ Group personas by segment
-├─ Surface conflicting viewpoints
-├─ Challenge assumptions
-└─ Identify blind spots
-    ↓
-Aggregation & Analysis
-├─ Common themes
-├─ Prioritized gaps
-├─ Sentiment scores
-└─ Non-obvious insights
+┌─────────────────────────────────────────────────────────────┐
+│                    LangGraph State Machine                   │
+└─────────────────────────────────────────────────────────────┘
+
+   START
+     ↓
+┌─────────────────────┐
+│ Generate Personas   │  BAML: UserPersona schema
+│ (Node 1)            │  Output: 300 type-safe personas
+└──────────┬──────────┘
+           ↓
+┌─────────────────────┐
+│ Phase 1: Reviews    │  BAML: PRDReview schema
+│ (Node 2 - Parallel) │  300 agents execute in parallel
+│ Map-Reduce Pattern  │  LangSmith: Trace all 300 calls
+└──────────┬──────────┘
+           ↓
+┌─────────────────────┐
+│ Conditional Router  │  LangGraph: Route based on sentiment
+│ (Conditional Edge)  │  If negative > 30% → Phase 2
+└──────────┬──────────┘  If negative < 30% → Skip to Aggregation
+           ↓
+   ┌───────┴────────┐
+   │                │
+   ↓                ↓
+┌──────────┐   ┌──────────────┐
+│ Phase 2  │   │ Skip Debate  │
+│ Debate   │   │ (Low Risk)   │
+│ (Node 3) │   └──────┬───────┘
+└────┬─────┘          │
+     │                │
+     └────────┬───────┘
+              ↓
+┌──────────────────────┐
+│ Aggregation & Insights│  BAML: AggregatedInsights schema
+│ (Node 4)             │  LangSmith: Track final analysis
+└──────────┬───────────┘
+           ↓
+         END
 ```
+
+### LangGraph State Schema
+
+```python
+from typing import TypedDict, Annotated
+from langgraph.graph import StateGraph, END
+from baml_client.types import UserPersona, PRDReview, DebateSession, AggregatedInsights
+
+class WorkflowState(TypedDict):
+    """State passed between LangGraph nodes"""
+    prd_content: str
+    personas: list[UserPersona]
+    reviews: list[PRDReview]
+    negative_sentiment_pct: float
+    debates: list[DebateSession] | None
+    final_insights: AggregatedInsights | None
+```
+
+### Nodes (Each uses BAML for type safety)
+
+1. **generate_personas**: Scale 4 segments → 300 personas
+2. **parallel_reviews**: Map-reduce 300 PRD reviews
+3. **facilitate_debates**: Group by segment, run debates
+4. **aggregate_insights**: Synthesize final report
+
+### Why Not Just LangChain?
+
+You could do this with LangChain's LCEL, but LangGraph adds:
+- **Stateful workflows**: Pass complex state between nodes
+- **Conditional routing**: Skip debate if sentiment is positive
+- **Parallelism**: 300 agents execute concurrently
+- **Checkpointing**: Resume if a phase fails
+- **Human-in-the-loop**: Pause before Phase 2 to review
+- **Visualization**: See the workflow graph in LangSmith
 
 ## Demo Flow
 
@@ -296,22 +376,56 @@ Then you validate with real users."
 - Compose agents: ReviewPRD → FacilitateDebate → AggregateReviews
 - Test in CI: Catch regression in synthetic feedback
 
-## Next Steps
+## Setup
 
-Run the demo:
+### 1. Install Dependencies
 ```bash
-# Activate environment
 source venv/bin/activate
+pip install -r requirements.txt
+```
 
-# Run Demo #2
+### 2. Set Environment Variables
+```bash
+# Required: Anthropic API for Claude
+export ANTHROPIC_API_KEY='your-key-here'
+
+# Optional but HIGHLY recommended: LangSmith for tracing
+export LANGCHAIN_TRACING_V2=true
+export LANGCHAIN_API_KEY='your-langsmith-key'
+export LANGCHAIN_PROJECT='baml-demo-2-prd-review'
+```
+
+**Why LangSmith?**
+- See all 300+ agent calls in a single trace
+- Debug which personas found which issues
+- Track token usage by phase
+- Replay failed runs
+- Free tier: 5K traces/month
+
+Get your key at: https://smith.langchain.com/
+
+### 3. Run the Demo
+```bash
+# Run with default settings (300 personas)
 python run_demo2.py
 
 # Or specify persona count
-python run_demo2.py --personas 300
+python run_demo2.py --personas 100
 
 # Or use your own PRD
 python run_demo2.py --prd my_prd.md
+
+# View trace in LangSmith
+# URL will be printed after run completes
 ```
+
+### 4. View in LangSmith UI
+After running, you'll see:
+- **Trace Tree**: All 300 review calls + 4 debate calls + 1 aggregation
+- **Token Usage**: Per-phase breakdown
+- **Latency**: Where time is spent (parallel reviews = fast!)
+- **Errors**: Which personas failed (if any)
+- **Metadata**: Sentiment scores, gap counts, risk score
 
 ---
 
