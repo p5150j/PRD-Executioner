@@ -1,0 +1,62 @@
+[
+  {
+    "segment_id": "busy_parents",
+    "demographic": {
+      "age_range": "30-45",
+      "income_level": "middle",
+      "family_status": "married with children",
+      "employment": "full-time working"
+    },
+    "behavioral": {
+      "tech_savviness": "moderate",
+      "time_constraints": "very high",
+      "budget_sensitivity": "high",
+      "feature_priorities": ["ease of use", "time-saving", "reliability"]
+    }
+  },
+  {
+    "segment_id": "young_professionals",
+    "demographic": {
+      "age_range": "22-32",
+      "income_level": "middle to high",
+      "family_status": "single or partnered, no kids",
+      "employment": "full-time working, career-focused"
+    },
+    "behavioral": {
+      "tech_savviness": "high",
+      "time_constraints": "moderate",
+      "budget_sensitivity": "moderate",
+      "feature_priorities": ["innovation", "integration", "customization"]
+    }
+  },
+  {
+    "segment_id": "budget_conscious_students",
+    "demographic": {
+      "age_range": "18-24",
+      "income_level": "low",
+      "family_status": "single",
+      "employment": "student, part-time work"
+    },
+    "behavioral": {
+      "tech_savviness": "high",
+      "time_constraints": "high",
+      "budget_sensitivity": "very high",
+      "feature_priorities": ["affordability", "simplicity", "mobile-first"]
+    }
+  },
+  {
+    "segment_id": "retirees",
+    "demographic": {
+      "age_range": "65+",
+      "income_level": "fixed income",
+      "family_status": "retired, living alone or with spouse",
+      "employment": "retired"
+    },
+    "behavioral": {
+      "tech_savviness": "low to moderate",
+      "time_constraints": "low",
+      "budget_sensitivity": "moderate to high",
+      "feature_priorities": ["accessibility", "customer support", "trust"]
+    }
+  }
+]

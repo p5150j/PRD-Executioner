@@ -1,0 +1,35 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# BAML generated
+baml_client/
+
+# Environment variables
+.env
+.env.local
+baml_src/.env
+
+# Demo stats (generated during runs)
+.demo_stats_before.json
+.demo_stats_after.json
+
+# IDE
+.vscode/
+.cursor/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
