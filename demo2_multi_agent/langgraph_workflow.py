@@ -25,6 +25,10 @@ import time
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
 
+# LangSmith tracing
+from langsmith import traceable
+from langsmith.run_helpers import get_current_run_tree, tracing_context
+
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -76,6 +80,7 @@ class WorkflowState(TypedDict):
 # NODE 1: GENERATE PERSONAS
 # ============================================================================
 
+@traceable(name="generate_personas_node", metadata={"node": "1", "phase": "setup"})
 def generate_personas_node(state: WorkflowState) -> WorkflowState:
     """
     Generate N personas from demographic segments.
@@ -118,6 +123,7 @@ def generate_personas_node(state: WorkflowState) -> WorkflowState:
 # NODE 2: PHASE 1 - PARALLEL PRD REVIEWS
 # ============================================================================
 
+@traceable(name="phase1_reviews_node", metadata={"node": "2", "phase": "phase1"})
 def phase1_reviews_node(state: WorkflowState) -> WorkflowState:
     """
     Have all personas independently review the PRD.
@@ -185,6 +191,7 @@ def phase1_reviews_node(state: WorkflowState) -> WorkflowState:
 # CONDITIONAL EDGE: SHOULD WE DEBATE?
 # ============================================================================
 
+@traceable(name="should_debate_router", metadata={"type": "conditional_edge"})
 def should_debate(state: WorkflowState) -> Literal["debate", "skip_debate"]:
     """
     Conditional routing: Run debate if negative sentiment > 30%
@@ -206,6 +213,7 @@ def should_debate(state: WorkflowState) -> Literal["debate", "skip_debate"]:
 # NODE 3: PHASE 2 - AGENT DEBATES
 # ============================================================================
 
+@traceable(name="phase2_debates_node", metadata={"node": "3", "phase": "phase2"})
 def phase2_debates_node(state: WorkflowState) -> WorkflowState:
     """
     Group personas by segment and facilitate debates.
@@ -269,6 +277,7 @@ def phase2_debates_node(state: WorkflowState) -> WorkflowState:
     return state
 
 
+@traceable(name="skip_debate_node", metadata={"node": "3_skip", "phase": "phase2_skip"})
 def skip_debate_node(state: WorkflowState) -> WorkflowState:
     """Skip debate phase (sentiment is good)"""
     state["debates"] = None
@@ -280,6 +289,7 @@ def skip_debate_node(state: WorkflowState) -> WorkflowState:
 # NODE 4: AGGREGATION & INSIGHTS
 # ============================================================================
 
+@traceable(name="aggregation_node", metadata={"node": "4", "phase": "aggregation"})
 def aggregation_node(state: WorkflowState) -> WorkflowState:
     """
     Aggregate all reviews and debates into actionable insights.
@@ -375,9 +385,41 @@ def create_workflow() -> StateGraph:
 
 
 # ============================================================================
+# LANGSMITH SETUP
+# ============================================================================
+
+def setup_langsmith():
+    """
+    Configure LangSmith tracing.
+    Checks for environment variables and provides setup instructions if missing.
+    """
+    api_key = os.getenv("LANGCHAIN_API_KEY")
+    tracing = os.getenv("LANGCHAIN_TRACING_V2", "false").lower() == "true"
+    project = os.getenv("LANGCHAIN_PROJECT", "baml-demo-2-prd-review")
+
+    if tracing and api_key:
+        print("✅ LangSmith tracing enabled")
+        print(f"   Project: {project}")
+        print(f"   View traces: https://smith.langchain.com/")
+        return True
+    elif tracing and not api_key:
+        print("⚠️  LangSmith tracing requested but LANGCHAIN_API_KEY not set")
+        print("   Get your key at: https://smith.langchain.com/")
+        print("   export LANGCHAIN_API_KEY='your-key-here'")
+        return False
+    else:
+        print("ℹ️  LangSmith tracing disabled (set LANGCHAIN_TRACING_V2=true to enable)")
+        return False
+
+
+# ============================================================================
 # MAIN EXECUTION
 # ============================================================================
 
+@traceable(
+    name="run_prd_review_workflow",
+    metadata={"workflow": "prd_review", "version": "1.0"}
+)
 def run_workflow(
     prd_content: str,
     personas_count: int = 20,
@@ -399,8 +441,29 @@ def run_workflow(
     print("="*80)
     print(f"Personas: {personas_count}")
     print(f"Checkpointing: {enable_checkpointing}")
+
+    # Setup LangSmith tracing
+    langsmith_enabled = setup_langsmith()
+
     print("="*80)
-    
+
+    # Add metadata for LangSmith
+    run_metadata = {
+        "personas_count": personas_count,
+        "prd_length": len(prd_content),
+        "checkpointing_enabled": enable_checkpointing,
+        "langsmith_enabled": langsmith_enabled
+    }
+
+    # Get current run and add metadata if tracing
+    try:
+        current_run = get_current_run_tree()
+        if current_run:
+            current_run.metadata.update(run_metadata)
+            current_run.tags = ["prd-review", "multi-agent", f"personas-{personas_count}"]
+    except:
+        pass  # LangSmith not enabled, skip
+
     # Create workflow
     workflow = create_workflow()
     
@@ -444,8 +507,22 @@ def run_workflow(
     print(f"Total duration: {total_duration:.1f}s")
     print(f"  Phase 1 (reviews): {final_state['phase1_duration']:.1f}s")
     print(f"  Phase 2 (debates): {final_state['phase2_duration']:.1f}s")
+
+    # Print LangSmith trace URL if enabled
+    if langsmith_enabled:
+        try:
+            current_run = get_current_run_tree()
+            if current_run and current_run.id:
+                project = os.getenv("LANGCHAIN_PROJECT", "baml-demo-2-prd-review")
+                trace_url = f"https://smith.langchain.com/o/default/projects/p/{project}/r/{current_run.id}"
+                print()
+                print(f"🔍 View trace in LangSmith:")
+                print(f"   {trace_url}")
+        except:
+            pass
+
     print("="*80)
-    
+
     return final_state["final_insights"]
 
 
