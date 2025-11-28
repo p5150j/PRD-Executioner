@@ -21,101 +21,6 @@ A multi-agent system that simulates a diverse user panel to validate your Produc
 
 **This doesn't replace real user research** - it's your **pre-flight checklist** to catch expensive mistakes early.
 
-## Key Features
-
-- **99.9% Type-Safe Outputs**: BAML ensures every LLM response matches your schema
-- **Real-Time Web UI**: Watch personas generate and reviews stream in live
-- **Multi-Agent Debates**: Surface segment conflicts that interviews miss
-- **Full Observability**: LangSmith tracing for every agent call
-- **Cost Efficient**: ~$1 for 50 personas, ~$5 for 300 personas
-
-## Quick Start
-
-### Prerequisites
-
-- Python 3.10+
-- Node.js 18+
-- Anthropic API key
-
-### 1. Install Dependencies
-
-```bash
-# Clone the repository
-git clone <your-repo-url>
-cd baml-test
-
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install Python dependencies
-pip install -r requirements.txt
-
-# Install frontend dependencies
-cd frontend
-npm install
-cd ..
-```
-
-### 2. Set Environment Variables
-
-**Create a `.env` file in the project root:**
-
-```bash
-# Copy the example file
-cp .env.example .env
-
-# Then edit .env and add your actual API keys
-```
-
-**Required variables:**
-```bash
-# Anthropic API for Claude (required)
-ANTHROPIC_API_KEY=sk-ant-...
-```
-
-**Optional but recommended:**
-```bash
-# LangSmith for observability (highly recommended for Demo #2)
-LANGCHAIN_TRACING_V2=true
-LANGCHAIN_API_KEY=lsv2_pt_...
-LANGCHAIN_PROJECT=prd-executioner
-```
-
-Get your keys:
-- Anthropic: https://console.anthropic.com/settings/keys
-- LangSmith: https://smith.langchain.com/ (free tier: 5K traces/month)
-
-**Note for BAML Playground users:**
-If you want to use `baml-cli dev` playground, also create `baml_src/.env`:
-```bash
-cp baml_src/.env.example baml_src/.env
-# Add your ANTHROPIC_API_KEY
-```
-
-### 3. Run the Application
-
-**Option A: Web UI (Recommended)**
-
-```bash
-# Terminal 1: Start backend
-source venv/bin/activate
-python api_server.py
-
-# Terminal 2: Start frontend
-cd frontend
-npm run dev
-```
-
-Open http://localhost:3000 in your browser.
-
-**Option B: Command Line**
-
-```bash
-source venv/bin/activate
-python run_demo2.py --personas 50
-```
-
 ## Architecture
 
 ### System Overview
@@ -245,6 +150,101 @@ sequenceDiagram
 - **TypeScript**: Full type safety
 - **Tailwind CSS**: Utility-first styling
 - **Server-Sent Events**: Real-time streaming updates
+
+## Key Features
+
+- **99.9% Type-Safe Outputs**: BAML ensures every LLM response matches your schema
+- **Real-Time Web UI**: Watch personas generate and reviews stream in live
+- **Multi-Agent Debates**: Surface segment conflicts that interviews miss
+- **Full Observability**: LangSmith tracing for every agent call
+- **Cost Efficient**: ~$1 for 50 personas, ~$5 for 300 personas
+
+## Quick Start
+
+### Prerequisites
+
+- Python 3.10+
+- Node.js 18+
+- Anthropic API key
+
+### 1. Install Dependencies
+
+```bash
+# Clone the repository
+git clone <your-repo-url>
+cd baml-test
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Install frontend dependencies
+cd frontend
+npm install
+cd ..
+```
+
+### 2. Set Environment Variables
+
+**Create a `.env` file in the project root:**
+
+```bash
+# Copy the example file
+cp .env.example .env
+
+# Then edit .env and add your actual API keys
+```
+
+**Required variables:**
+```bash
+# Anthropic API for Claude (required)
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+**Optional but recommended:**
+```bash
+# LangSmith for observability (highly recommended for Demo #2)
+LANGCHAIN_TRACING_V2=true
+LANGCHAIN_API_KEY=lsv2_pt_...
+LANGCHAIN_PROJECT=prd-executioner
+```
+
+Get your keys:
+- Anthropic: https://console.anthropic.com/settings/keys
+- LangSmith: https://smith.langchain.com/ (free tier: 5K traces/month)
+
+**Note for BAML Playground users:**
+If you want to use `baml-cli dev` playground, also create `baml_src/.env`:
+```bash
+cp baml_src/.env.example baml_src/.env
+# Add your ANTHROPIC_API_KEY
+```
+
+### 3. Run the Application
+
+**Option A: Web UI (Recommended)**
+
+```bash
+# Terminal 1: Start backend
+source venv/bin/activate
+python api_server.py
+
+# Terminal 2: Start frontend
+cd frontend
+npm run dev
+```
+
+Open http://localhost:3000 in your browser.
+
+**Option B: Command Line**
+
+```bash
+source venv/bin/activate
+python run_demo2.py --personas 50
+```
 
 ## Project Structure
 
