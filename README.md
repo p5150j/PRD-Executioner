@@ -118,45 +118,118 @@ python run_demo2.py --personas 50
 
 ## Architecture
 
+### System Overview
+
+```mermaid
+graph TB
+    subgraph Frontend["Frontend (Next.js 14 + TypeScript)"]
+        UI[PRD Executioner UI]
+        SSE[SSE Client]
+    end
+
+    subgraph Backend["Backend (FastAPI)"]
+        API["/api/review/stream"]
+        LG[LangGraph Workflow]
+    end
+
+    subgraph Workflow["Multi-Agent Workflow"]
+        N1[Generate Personas]
+        N2[Parallel Reviews]
+        R{Sentiment<br/>Check}
+        N3[Agent Debates]
+        N4[Aggregate Insights]
+    end
+
+    subgraph External["External Services"]
+        BAML[BAML Schema Parser]
+        Claude[Claude API]
+        LS[LangSmith Tracing]
+    end
+
+    UI -->|POST PRD| API
+    API -->|Stream Events| SSE
+    SSE -->|Update UI| UI
+
+    API --> LG
+    LG --> N1
+    N1 --> N2
+    N2 --> R
+    R -->|"< 30% negative"| N4
+    R -->|">= 30% negative"| N3
+    N3 --> N4
+
+    N1 & N2 & N3 & N4 -->|Type-safe calls| BAML
+    BAML -->|Validated requests| Claude
+    Claude -->|Raw response| BAML
+    BAML -->|Parsed & validated| LG
+
+    LG -.->|Trace all calls| LS
 ```
-┌─────────────────────────────────────────────────────────┐
-│  FRONTEND (Next.js 14 + TypeScript + Tailwind)         │
-│  http://localhost:3000                                  │
-│                                                         │
-│  • Death metal themed UI (PRD EXECUTIONER 🤘)          │
-│  • Real-time progress via Server-Sent Events            │
-│  • Interactive insights dashboard                       │
-│                                                         │
-│  Connected via SSE ──────────────────┐                 │
-└─────────────────────────────────────────────────────────┘
-                                       │
-                                       ▼
-┌─────────────────────────────────────────────────────────┐
-│  BACKEND (FastAPI + SSE)                               │
-│  http://localhost:8000                                  │
-│                                                         │
-│  • POST /api/review/stream  (SSE streaming)           │
-│  • Wraps LangGraph workflow                            │
-│                                                         │
-│  LangGraph State Machine ──────────┐                   │
-└─────────────────────────────────────────────────────────┘
-                                     │
-                                     ▼
-┌─────────────────────────────────────────────────────────┐
-│  WORKFLOW (LangGraph + BAML + LangSmith)               │
-│                                                         │
-│  Node 1: Generate Personas (BAML: UserPersona)         │
-│          ↓                                              │
-│  Node 2: Parallel Reviews (BAML: PRDReview)            │
-│          ↓                                              │
-│  Router: If sentiment < 30% negative → Skip debate      │
-│          ↓                                              │
-│  Node 3: Agent Debates (BAML: DebateSession)           │
-│          ↓                                              │
-│  Node 4: Aggregate Insights (BAML: AggregatedInsights) │
-│                                                         │
-│  Full observability in LangSmith                       │
-└─────────────────────────────────────────────────────────┘
+
+### Request Flow Sequence
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant User
+    participant Frontend
+    participant API as FastAPI
+    participant LG as LangGraph
+    participant BAML
+    participant Claude
+    participant LS as LangSmith
+
+    User->>Frontend: Submit PRD + Config
+    Frontend->>API: POST /api/review/stream
+    API->>LG: Start workflow
+
+    rect rgb(40, 40, 40)
+        Note over LG,Claude: Phase 1: Persona Generation
+        LG->>BAML: GeneratePersonas(segments)
+        BAML->>Claude: Type-safe prompt
+        Claude-->>BAML: Raw JSON response
+        BAML-->>LG: Validated UserPersona[]
+        LG-->>API: SSE: personas_complete
+        API-->>Frontend: Stream update
+    end
+
+    rect rgb(40, 40, 40)
+        Note over LG,Claude: Phase 2: Parallel Reviews (N concurrent)
+        par For each persona
+            LG->>BAML: ReviewPRD(persona, prd)
+            BAML->>Claude: Type-safe prompt
+            Claude-->>BAML: Raw response
+            BAML-->>LG: Validated PRDReview
+        end
+        LG-->>API: SSE: reviews_complete
+        API-->>Frontend: Stream update
+    end
+
+    alt Sentiment >= 30% negative
+        rect rgb(40, 40, 40)
+            Note over LG,Claude: Phase 3: Agent Debates
+            LG->>BAML: RunDebate(conflicting_reviews)
+            BAML->>Claude: Type-safe prompt
+            Claude-->>BAML: Raw response
+            BAML-->>LG: Validated DebateResult
+            LG-->>API: SSE: debates_complete
+            API-->>Frontend: Stream update
+        end
+    end
+
+    rect rgb(40, 40, 40)
+        Note over LG,Claude: Phase 4: Aggregation
+        LG->>BAML: AggregateInsights(all_data)
+        BAML->>Claude: Type-safe prompt
+        Claude-->>BAML: Raw response
+        BAML-->>LG: Validated AggregatedInsights
+    end
+
+    LG-->>API: SSE: complete
+    API-->>Frontend: Final results
+    Frontend-->>User: Display insights dashboard
+
+    Note over LS: All LLM calls traced<br/>for debugging
 ```
 
 ### Tech Stack
