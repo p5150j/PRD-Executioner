@@ -36,19 +36,22 @@ VARIATION_PROMPTS = [
 def generate_persona_variation(segment: dict, variation_index: int) -> UserPersona:
     """
     Generate a single persona variation for a segment.
-    
+
     Args:
         segment: Demographic segment data
         variation_index: Index of this variation (for randomization)
-        
+
     Returns:
         Type-safe UserPersona object from BAML
     """
     # Use variation index to add diversity to the prompt
     variation_prompt = VARIATION_PROMPTS[variation_index % len(VARIATION_PROMPTS)]
-    
+
+    # Check if this is a custom segment
+    segment_name = segment.get('custom_name', segment['segment_id'])
+
     # Format segment data with variation instruction
-    segment_data = f"""Segment: {segment['segment_id']}
+    segment_data = f"""Segment: {segment_name}
 
 Demographics:
 - Age range: {segment['demographic']['age_range']}
@@ -64,10 +67,14 @@ Behavioral traits:
 
 VARIATION INSTRUCTION: {variation_prompt}
 """
-    
+
+    # Add custom description if provided
+    if 'custom_description' in segment:
+        segment_data += f"\n\nAdditional Context: {segment['custom_description']}"
+
     # Call BAML function for type-safe persona generation
     persona: UserPersona = b.GeneratePersona(segment_data=segment_data)
-    
+
     return persona
 
 

@@ -1,6 +1,12 @@
 # Demo #2: "300 Synthetic Users Reviewed My PRD in 3 Minutes"
 
+[← Back to Main README](README.md) | [← Type-Safe Outputs Guide](TYPE_SAFE_OUTPUTS.md)
+
+---
+
 **Hook**: You're shipping features to users that only exist in your head. Here's how I stopped guessing.
+
+> **Prerequisites**: This guide builds on the personas from the [Type-Safe Outputs Guide](TYPE_SAFE_OUTPUTS.md). Start there if you're new to BAML.
 
 ## The Problem
 
@@ -327,34 +333,156 @@ TIME: 61.3s | TOKENS: ~245,000 | COST: ~$0.74
 ## Demo Script for Video
 
 ### Opening Hook (15s)
-"You're shipping features to users that only exist in your head. I had 300 synthetic users review my PRD in 3 minutes. Here's what they found."
+"You're shipping features to users that only exist in your head. I had 50 synthetic users review my PRD in 5 minutes. Here's what they found - and it completely changed my roadmap."
 
 ### The Problem (30s)
-"The cold start problem kills products. No users? No feedback. So you ship on assumptions and learn expensive lessons in production. What if you could simulate a diverse user panel before you write a single line of code?"
+"The cold start problem kills products. No users? No feedback. So you ship on assumptions and learn expensive lessons in production. What if you could simulate a diverse user panel - complete with segment conflicts and non-obvious insights - before you write a single line of code?"
 
-### The Demo (3min)
-Show the full pipeline running:
-1. Persona generation (300 from 4 segments)
-2. Phase 1: Independent reviews scrolling by
-3. Phase 2: Debate session highlighting conflicts
-4. Final aggregation with non-obvious insights
+### The Demo Setup (30s)
+```bash
+python run_demo2.py --personas 50
+```
 
-### The Insight (45s)
-Highlight a real conflict:
-- "Watch this: Busy Parents want fewer notifications, Retirees want more reminders"
-- "My PRD assumed one notification strategy would work for everyone"
-- "The debate surfaced this conflict - I never would have caught it"
+Show the command running, then cut to:
+- "I'm testing a personal finance app PRD"
+- "4 demographic segments: Busy Parents, Young Professionals, Students, Retirees"
+- "50 synthetic personas generated with diverse backgrounds"
+- "Full LangSmith tracing enabled - we can inspect every agent call"
+
+### The Demo - Phase 1 (1min)
+Show the terminal output:
+```
+NODE 2: PHASE 1 - INDEPENDENT PRD REVIEWS
+Running 48 parallel reviews...
+  ✓ 10/48 reviews (40.6s elapsed, ~154.4s remaining)
+  ✓ 20/48 reviews (80.8s elapsed, ~113.1s remaining)
+  ✓ 30/48 reviews (121.7s elapsed, ~73.0s remaining)
+  ✓ 40/48 reviews (164.6s elapsed, ~32.9s remaining)
+
+✅ Phase 1 Complete:
+   48 reviews in 197.5s
+   Sentiment: 0.0% negative
+```
+
+**Narration:**
+- "Each persona independently reviews the PRD from their perspective"
+- "BAML ensures type-safe structured output - every review has the same fields"
+- "No JSON parsing errors, no schema validation failures"
+- "This is what 99.9% reliability looks like"
+
+### The Demo - Conditional Routing (20s)
+```
+🔀 ROUTING: Negative sentiment 0.0% ≤ 30.0% → Skipping debate
+```
+
+**Narration:**
+- "LangGraph's conditional routing: If sentiment is negative, trigger debates"
+- "Our PRD scored well, so we skip to aggregation"
+- "But if we had >30% negative, agents would debate the conflicts"
+
+### The Demo - Aggregation (1min)
+Show the results:
+```
+🎯 RISK SCORE: 6.5/10
+   ⚡ MODERATE RISK - Some issues to address
+
+📊 EXECUTIVE SUMMARY
+SmartBudget shows promise but has significant accessibility gaps
+and segment-specific needs that aren't addressed. Retirees (60%
+adoption) and students (80% adoption) have very different financial
+management requirements.
+
+💭 SENTIMENT BREAKDOWN
+  Positive:  19 (40%)
+  Neutral:   25 (53%)
+  Negative:   3 (7%)
+
+⚠️  TOP CONCERNS
+  1. Feeling overwhelmed by digital tools
+  2. Finding time-saving solutions
+  3. Budget constraints
+  4. Security/privacy worries
+  5. Work-life-family balance
+```
+
+### The Insight - The Gold (45s)
+Cut to the non-obvious insights:
+
+```
+💡 NON-OBVIOUS INSIGHTS (from agent debates)
+
+💡 Accessibility isn't just for disabilities - many older adults
+   struggle with technology and would benefit from personalized
+   settings and guided support
+
+💡 Retirees on fixed incomes have unique financial management needs
+   (retirement income tracking, healthcare expense planning) that
+   generic budgeting tools don't address
+
+💡 College students require specialized features like textbook cost
+   tracking, financial aid integration, and campus service connections
+```
+
+**Narration:**
+- "THIS is the gold. Insights that would NEVER come from individual user interviews"
+- "The system identified that retirees need retirement income tracking - not in my PRD"
+- "Students need textbook tracking and financial aid integration - completely missed it"
+- "These insights emerged from analyzing 50 perspectives simultaneously"
+
+### The Conflict (30s)
+Show segment conflicts:
+```
+⚔️  MAJOR CONFLICTS
+
+• Integration vs Simplicity
+  Busy Parents want: Deep integrations with productivity apps
+  Retirees want: Simple UI without linking multiple accounts
+  Why it conflicts: Security vs convenience trade-off
+
+• Adoption Likelihood
+  Students: 80% likely to adopt
+  Retirees: 60% likely to adopt
+  Gap: Retirees need specialized onboarding
+```
+
+**Narration:**
+- "See this conflict? Parents want integration, retirees want simplicity"
+- "You can't satisfy both with one approach - this is a real product decision"
+- "Without this analysis, I'd build for one segment and alienate the other"
+
+### The Tech Stack (30s)
+Show LangSmith trace in browser:
+- Expand the trace tree showing all 48 review calls
+- Click into one review to show the type-safe BAML output
+- Show token usage breakdown
+
+**Narration:**
+- "This is LangSmith - full observability for all 48 agent calls"
+- "Every persona's review is traced and debuggable"
+- "BAML guarantees type safety - every field validates"
+- "LangGraph orchestrates the workflow with conditional routing"
 
 ### The Nuance (30s)
-"This doesn't replace real user research. It's your pre-flight checklist. You catch:
-- Obvious gaps (accessibility, pricing)
-- Segment conflicts (features loved by one group, hated by another)
-- Non-obvious insights (from agent debate)
+"Now here's the important part: This doesn't replace real user research.
 
-Then you validate with real users."
+Think of it as your pre-flight checklist:
+- ✅ Catch obvious gaps (accessibility, pricing)
+- ✅ Surface segment conflicts early
+- ✅ Identify non-obvious insights worth validating
+- ✅ Prioritize what to test with real users
 
-### Closing (15s)
-"300 synthetic users. 3 minutes. One non-obvious insight can save months of rework. Link in description."
+Then you go validate the top insights with actual users. But you're not flying blind anymore."
+
+### Closing (20s)
+"50 synthetic users. 5 minutes. 3 non-obvious insights that changed my roadmap.
+
+Cost? Less than a dollar.
+
+Alternative? Ship blindly and find out in production.
+
+Demo code, full setup, and LangSmith trace - link in description.
+
+This is what pre-flight validation looks like."
 
 ## Why This Matters
 
@@ -385,14 +513,26 @@ pip install -r requirements.txt
 ```
 
 ### 2. Set Environment Variables
-```bash
-# Required: Anthropic API for Claude
-export ANTHROPIC_API_KEY='your-key-here'
 
-# Optional but HIGHLY recommended: LangSmith for tracing
-export LANGCHAIN_TRACING_V2=true
-export LANGCHAIN_API_KEY='your-langsmith-key'
-export LANGCHAIN_PROJECT='baml-demo-2-prd-review'
+**Create a `.env` file in the project root:**
+```bash
+# From project root
+cp .env.example .env
+
+# Edit .env and add your actual API keys
+```
+
+**Required:**
+```bash
+# Anthropic API for Claude
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+**Highly Recommended - LangSmith for tracing:**
+```bash
+LANGCHAIN_TRACING_V2=true
+LANGCHAIN_API_KEY=lsv2_pt_...
+LANGCHAIN_PROJECT=baml-demo-2-prd-review
 ```
 
 **Why LangSmith?**
@@ -402,7 +542,9 @@ export LANGCHAIN_PROJECT='baml-demo-2-prd-review'
 - Replay failed runs
 - Free tier: 5K traces/month
 
-Get your key at: https://smith.langchain.com/
+**Get your keys:**
+- Anthropic: https://console.anthropic.com/settings/keys
+- LangSmith: https://smith.langchain.com/
 
 ### 3. Run the Demo
 ```bash
@@ -430,3 +572,5 @@ After running, you'll see:
 ---
 
 **The Takeaway**: Stop shipping to users that only exist in your head. Simulate a diverse user panel, surface conflicts early, ship with confidence instead of hope.
+
+[← Back to Main README](README.md) | [← Type-Safe Outputs Guide](TYPE_SAFE_OUTPUTS.md)

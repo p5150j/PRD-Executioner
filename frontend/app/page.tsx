@@ -20,7 +20,7 @@ export default function Home() {
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
-          opacity: 0.2,
+          opacity: 0.3,
           zIndex: 1
         }}
       />
@@ -86,7 +86,7 @@ export default function Home() {
       {/* Nav */}
       <nav className="border-b border-[#ff006e]/20 relative z-10 backdrop-blur-sm bg-black/50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="text-3xl font-[family-name:var(--font-bebas)] tracking-tight text-white neon-text-pink">PRD EXECUTIONER</div>
+          <div className="text-3xl font-[family-name:var(--font-bebas)] tracking-tight text-white neon-text-pink">🤘 PRD EXECUTIONER</div>
           <div className="text-sm text-[#00d9ff] font-semibold">BAML + LangGraph + LangSmith</div>
         </div>
       </nav>

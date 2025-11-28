@@ -1,5 +1,9 @@
 # Demo #1: "Stop Praying Your LLM Returns Valid JSON"
 
+[← Back to Main README](README.md) | [Multi-Agent Review Guide →](MULTI_AGENT_REVIEW.md)
+
+---
+
 **Hook**: Your LLM app works 95% of the time. That 5% is why your users don't trust it.
 
 ## The Problem
@@ -28,9 +32,17 @@ You end up writing 300+ lines of regex parsing, type coercion, and retry logic. 
 ## Quick Start
 
 ### 1. Set API Key
+
+Create a `.env` file in the project root:
 ```bash
-export ANTHROPIC_API_KEY='your-key-here'
+# From project root
+cp .env.example .env
+
+# Edit .env and add your Anthropic API key
+# ANTHROPIC_API_KEY=sk-ant-...
 ```
+
+Get your key from: https://console.anthropic.com/settings/keys
 
 ### 2. Run the Demo
 ```bash
@@ -278,7 +290,7 @@ SAVINGS:
 
 ## Next Steps
 
-After mastering Demo #1, use these personas in **Demo #2**: "300 Synthetic Users Reviewed My PRD"
+After mastering type-safe outputs, continue to **[Multi-Agent Review Guide: 300 Synthetic Users Reviewed My PRD](MULTI_AGENT_REVIEW.md)**
 - Same UserPersona schema
 - Generate 300 variations
 - Have them review and debate your PRD
@@ -287,3 +299,5 @@ After mastering Demo #1, use these personas in **Demo #2**: "300 Synthetic Users
 ---
 
 **The Takeaway**: Stop praying your LLM returns valid JSON. Use BAML for type-safe, reliable structured outputs.
+
+[← Back to Main README](README.md) | [Multi-Agent Review Guide →](MULTI_AGENT_REVIEW.md)

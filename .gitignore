@@ -17,11 +17,23 @@ baml_client/
 # Environment variables
 .env
 .env.local
+.env.*.local
 baml_src/.env
+
+# Note: .env.example files are NOT ignored (they should be committed)
 
 # Demo stats (generated during runs)
 .demo_stats_before.json
 .demo_stats_after.json
+
+# Generated outputs
+demo2_multi_agent/generated_personas_*.json
+demo2_results.json
+demo1_before_baml/fail.json
+
+# Temporary files and screenshots
+modified_image*.png
+screens/
 
 # IDE
 .vscode/

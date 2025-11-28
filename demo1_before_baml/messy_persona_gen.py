@@ -243,13 +243,15 @@ def parse_and_validate_response(raw_response: str, segment_id: str) -> UserPerso
     # Validate and coerce each field
     try:
         # Name variations: "name", "persona_name", "user_name"
-        name = data.get("name") or data.get("persona_name") or data.get("user_name") or f"User {segment_id}"
+        name = data.get("name") or data.get("persona_name") or data.get(
+            "user_name") or f"User {segment_id}"
 
         # Age can be string or int or range
         age = validate_age(data.get("age"))
 
         # Occupation
-        occupation = str(data.get("occupation") or data.get("job") or "Unknown")
+        occupation = str(data.get("occupation")
+                         or data.get("job") or "Unknown")
 
         # Tech comfort has many names
         tech_comfort = validate_tech_comfort(
@@ -260,12 +262,16 @@ def parse_and_validate_response(raw_response: str, segment_id: str) -> UserPerso
         )
 
         # Income level
-        income = str(data.get("income_level") or data.get("income") or "moderate")
+        income = str(data.get("income_level")
+                     or data.get("income") or "moderate")
 
         # Arrays - can come in many formats
-        pain_points = ensure_string_array(data.get("pain_points") or data.get("challenges") or data.get("frustrations"))
-        goals = ensure_string_array(data.get("goals") or data.get("objectives") or data.get("needs"))
-        channels = ensure_string_array(data.get("preferred_channels") or data.get("channels") or data.get("communication_preferences"))
+        pain_points = ensure_string_array(data.get("pain_points") or data.get(
+            "challenges") or data.get("frustrations"))
+        goals = ensure_string_array(data.get("goals") or data.get(
+            "objectives") or data.get("needs"))
+        channels = ensure_string_array(data.get("preferred_channels") or data.get(
+            "channels") or data.get("communication_preferences"))
 
         # Quote
         quote = str(data.get("quote") or data.get("user_quote") or "")
@@ -428,7 +434,8 @@ IMPORTANT: Return ONLY valid JSON matching this schema, no markdown code blocks,
 
             raw_response = response.content[0].text
             print(f"📥 Raw response length: {len(raw_response)} chars")
-            print(f"🎫 Tokens: {response.usage.input_tokens} in, {response.usage.output_tokens} out")
+            print(
+                f"🎫 Tokens: {response.usage.input_tokens} in, {response.usage.output_tokens} out")
 
             # Parse and validate
             result = parse_and_validate_response(raw_response, segment_id)
@@ -458,7 +465,8 @@ IMPORTANT: Return ONLY valid JSON matching this schema, no markdown code blocks,
     # 💀 💀 💀 ALL RETRIES EXHAUSTED - COMPLETE FAILURE 💀 💀 💀
     # After 3 tries, exponential backoff, burning tokens, and ~10 seconds...
     # we still couldn't get valid data. This is the 5% that kills user trust.
-    print(f"💀 All retries exhausted for {segment_id}. Last error: {last_error}")
+    print(
+        f"💀 All retries exhausted for {segment_id}. Last error: {last_error}")
     print(f"   This is a REAL failure. User gets garbage data or an error.")
     return UserPersona(
         name=f"Failed User ({segment_id})",

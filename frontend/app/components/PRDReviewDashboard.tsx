@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import PRDInput from './PRDInput'
 import ProgressVisualization from './ProgressVisualization'
 
@@ -85,10 +85,24 @@ interface FinalInsights {
   strategic_decisions_needed: string[]
 }
 
+interface SegmentConfig {
+  segment_id: string
+  name: string
+  icon: string
+  enabled: boolean
+  count: number
+}
+
 export default function PRDReviewDashboard({ onBack }: { onBack: () => void }) {
   const [phase, setPhase] = useState<Phase>('input')
   const [prdContent, setPrdContent] = useState('')
   const [numPersonas, setNumPersonas] = useState(50)
+  const [segments, setSegments] = useState<SegmentConfig[]>([
+    { segment_id: 'busy_parents', name: 'Busy Parents', icon: '', enabled: true, count: 12 },
+    { segment_id: 'young_professionals', name: 'Young Professionals', icon: '', enabled: true, count: 13 },
+    { segment_id: 'budget_conscious_students', name: 'Students', icon: '', enabled: true, count: 12 },
+    { segment_id: 'retirees', name: 'Retirees', icon: '', enabled: true, count: 13 }
+  ])
 
   const [progress, setProgress] = useState<ProgressState>({
     phase: 'idle',
@@ -124,6 +138,16 @@ export default function PRDReviewDashboard({ onBack }: { onBack: () => void }) {
     })
 
     try {
+      // Only send enabled segments with count > 0, and only the fields the API needs
+      const enabledSegments = segments
+        .filter(s => s.enabled && s.count > 0)
+        .map(s => ({
+          segment_id: s.segment_id,
+          count: s.count,
+          // Include custom name for custom segments
+          ...(s.segment_id.startsWith('custom_') ? { custom_name: s.name } : {})
+        }))
+
       const response = await fetch('http://localhost:8000/api/review/stream', {
         method: 'POST',
         headers: {
@@ -131,7 +155,8 @@ export default function PRDReviewDashboard({ onBack }: { onBack: () => void }) {
         },
         body: JSON.stringify({
           prd_content: prdContent,
-          num_personas: numPersonas
+          num_personas: numPersonas,
+          segments: enabledSegments.length > 0 ? enabledSegments : null
         })
       })
 
@@ -287,7 +312,7 @@ export default function PRDReviewDashboard({ onBack }: { onBack: () => void }) {
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
-          opacity: 0.2,
+          opacity: 0.3,
           zIndex: 1
         }}
       />
@@ -353,7 +378,7 @@ export default function PRDReviewDashboard({ onBack }: { onBack: () => void }) {
       {/* Nav */}
       <nav className="border-b border-[#ff006e]/20 relative z-10 backdrop-blur-sm bg-black/50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="text-3xl font-[family-name:var(--font-bebas)] tracking-tight text-white neon-text-pink">PRD EXECUTIONER</div>
+          <div className="text-3xl font-[family-name:var(--font-bebas)] tracking-tight text-white neon-text-pink">🤘 PRD EXECUTIONER</div>
           <button
             onClick={onBack}
             className="text-sm font-black text-[#00d9ff] hover:text-white transition-colors uppercase tracking-widest"
@@ -393,6 +418,8 @@ export default function PRDReviewDashboard({ onBack }: { onBack: () => void }) {
             setPrdContent={setPrdContent}
             numPersonas={numPersonas}
             setNumPersonas={setNumPersonas}
+            segments={segments}
+            setSegments={setSegments}
             onStart={startReview}
           />
         )}

@@ -24,10 +24,19 @@ from demo2_multi_agent.persona_scaling import load_segments, scale_personas, gen
 # Pydantic Models for API
 # ============================================================================
 
+class SegmentConfig(BaseModel):
+    """Configuration for a demographic segment"""
+    segment_id: str
+    count: int = Field(ge=0, le=100, description="Number of personas for this segment")
+    # Optional fields for custom segments
+    custom_name: str | None = Field(default=None, description="Name for custom segment")
+    custom_description: str | None = Field(default=None, description="Description for custom segment")
+
 class PRDReviewRequest(BaseModel):
     """Request to review a PRD"""
     prd_content: str = Field(..., description="The PRD markdown content to review")
     num_personas: int = Field(default=50, ge=4, le=300, description="Number of synthetic personas (4-300)")
+    segments: list[SegmentConfig] | None = Field(default=None, description="Optional custom segment distribution")
 
 
 class StreamEvent(BaseModel):
@@ -72,7 +81,11 @@ async def send_event(event_type: str, data: Dict[str, Any]) -> str:
     return event.model_dump_json()
 
 
-async def stream_prd_review(prd_content: str, num_personas: int) -> AsyncGenerator[str, None]:
+async def stream_prd_review(
+    prd_content: str,
+    num_personas: int,
+    segment_configs: list[SegmentConfig] | None = None
+) -> AsyncGenerator[str, None]:
     """
     Generator that yields SSE events as the workflow progresses
     """
@@ -89,36 +102,98 @@ async def stream_prd_review(prd_content: str, num_personas: int) -> AsyncGenerat
             "message": "Loading demographic segments..."
         })
 
-        segments = load_segments()
-        personas_per_segment = num_personas // len(segments)
+        all_segments = load_segments()
 
-        yield await send_event("progress", {
-            "phase": "persona_generation",
-            "message": f"Generating {num_personas} personas across {len(segments)} segments...",
-        })
+        # Build segment distribution
+        if segment_configs:
+            # Custom distribution from frontend
+            segment_distribution = {}
+            for config in segment_configs:
+                if config.count > 0:  # Only include segments with non-zero count
+                    # Check if it's a custom segment
+                    if config.segment_id.startswith('custom_'):
+                        # Create a generic segment template for custom segments
+                        custom_segment = {
+                            "segment_id": config.segment_id,
+                            "demographic": {
+                                "age_range": "18-65",
+                                "income_level": "varied",
+                                "family_status": "varied",
+                                "employment": "varied"
+                            },
+                            "behavioral": {
+                                "tech_savviness": "moderate",
+                                "time_constraints": "moderate",
+                                "budget_sensitivity": "moderate",
+                                "feature_priorities": ["usability", "value", "functionality"]
+                            }
+                        }
+
+                        # Add custom description if provided
+                        if config.custom_name:
+                            custom_segment["custom_name"] = config.custom_name
+                        if config.custom_description:
+                            custom_segment["custom_description"] = config.custom_description
+
+                        segment_distribution[config.segment_id] = {
+                            "segment": custom_segment,
+                            "count": config.count
+                        }
+                    else:
+                        # Find matching segment from loaded segments
+                        matching_segment = next((s for s in all_segments if s['segment_id'] == config.segment_id), None)
+                        if matching_segment:
+                            segment_distribution[config.segment_id] = {
+                                "segment": matching_segment,
+                                "count": config.count
+                            }
+
+            active_segments = len(segment_distribution)
+            yield await send_event("progress", {
+                "phase": "persona_generation",
+                "message": f"Generating {num_personas} personas across {active_segments} custom segments...",
+            })
+        else:
+            # Default: Even distribution across all segments
+            personas_per_segment = num_personas // len(all_segments)
+            segment_distribution = {
+                seg['segment_id']: {
+                    "segment": seg,
+                    "count": personas_per_segment
+                }
+                for seg in all_segments
+            }
+
+            yield await send_event("progress", {
+                "phase": "persona_generation",
+                "message": f"Generating {num_personas} personas across {len(all_segments)} segments...",
+            })
 
         # Generate personas one-by-one for real-time updates
         all_personas = []
         persona_to_segment = {}  # Track which segment each persona belongs to
         variation_index = 0
 
-        for segment in segments:
+        for segment_id, config in segment_distribution.items():
+            segment = config["segment"]
+            count = config["count"]
+
             yield await send_event("progress", {
                 "phase": "persona_generation",
-                "message": f"Generating personas for {segment['segment_id']}...",
-                "segment": segment['segment_id']
+                "message": f"Generating {count} personas for {segment_id}...",
+                "segment": segment_id
             })
 
-            for i in range(personas_per_segment):
+            for i in range(count):
                 # Generate one persona at a time
                 persona = generate_persona_variation(segment, variation_index)
                 all_personas.append(persona)
-                persona_to_segment[persona.name] = segment['segment_id']
+                persona_to_segment[persona.name] = segment_id
                 variation_index += 1
 
                 # Send update after each persona with full details
                 yield await send_event("persona_generated", {
-                    "segment": segment['segment_id'],
+                    "segment": segment_id,
                     "persona": {
                         "name": persona.name,
                         "age": persona.age,
@@ -440,7 +515,7 @@ async def review_prd_stream(request: PRDReviewRequest):
     - Final insights
     """
     return EventSourceResponse(
-        stream_prd_review(request.prd_content, request.num_personas),
+        stream_prd_review(request.prd_content, request.num_personas, request.segments),
         media_type="text/event-stream"
     )
 
